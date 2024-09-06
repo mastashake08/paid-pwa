@@ -1,0 +1,42 @@
+{
+  "name": "@mastashake08/paid-pwa",
+  "version": "1.0.0",
+  "description": "A package for handling paid PWA installations using Stripe and the Payment Request API, with Web Component and Vue 3 support.",
+  "main": "src/paid-pwa.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/paid-pwa.js",
+      "require": "./src/paid-pwa.js"
+    },
+    "./vue": {
+      "import": "./src/PaidPwa.vue",
+      "require": "./src/PaidPwa.vue"
+    }
+  },
+  "keywords": [
+    "stripe",
+    "payment-request",
+    "pwa",
+    "service-worker",
+    "web-component",
+    "vue",
+    "vue3",
+    "javascript"
+  ],
+  "author": "Jyrone Parker",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@stripe/stripe-js": "^1.26.0",
+    "stripe": "^8.174.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.15.1",
+    "@testing-library/vue": "^6.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "jest": "^29.7.0"
+  }
+}
