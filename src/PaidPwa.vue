@@ -56,7 +56,7 @@ export default {
         const setupPaymentRequest = () => {
             const supportedPaymentMethods = [
                 {
-                    supportedMethods: 'basic-card',
+                    supportedMethods: ["https://google.com/pay"],
                     data: {
                         supportedNetworks: props.supportedNetworks,
                         supportedTypes: props.supportedTypes,
@@ -74,6 +74,7 @@ export default {
 
         const handlePayment = async () => {
             try {
+                console.log(paymentRequest.value)
                 const paymentResponse = await paymentRequest.value.show();
                 handlePaymentResponse(paymentResponse);
             } catch (error) {
