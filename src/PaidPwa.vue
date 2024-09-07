@@ -99,14 +99,7 @@ export default {
 
                 },
             };
-            const cardMethod = {
-                supportedMethods: "basic-card",
-                data: {
-                    supportedNetworks: props.supportedNetworks,
-                    supportedTypes: props.supportedTypes
-
-                },
-            };
+            
             const supportedPaymentMethods = [
                 googlePayMethod,
                 applePayMethod
