@@ -32,12 +32,12 @@ export class PaidPWA extends HTMLElement {
     setupPaymentRequest({ currency, amount, country, supportedNetworks, supportedTypes }) {
         const supportedPaymentMethods = [
             {
-                supportedMethods: 'basic-card',
-                data: {
-                    supportedNetworks,
-                    supportedTypes,
+                    supportedMethods: "https://google.com/pay",
+                    data: {
+                        supportedNetworks: props.supportedNetworks,
+                        supportedTypes: props.supportedTypes,
+                    },
                 }
-            }
         ];
         this.paymentRequest = new PaymentRequest(supportedPaymentMethods, {
             total: {

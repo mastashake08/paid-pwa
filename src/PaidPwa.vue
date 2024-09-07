@@ -54,14 +54,37 @@ export default {
         });
 
         const setupPaymentRequest = () => {
-            const supportedPaymentMethods = [
-                {
-                    supportedMethods: ["https://google.com/pay"],
-                    data: {
-                        supportedNetworks: props.supportedNetworks,
-                        supportedTypes: props.supportedTypes,
-                    },
+            const applePayMethod = {
+                supportedMethods: "https://apple.com/apple-pay",
+                data: {
+                    version: 3,
+                    merchantIdentifier: "merchant.com.bestbudz",
+                    merchantCapabilities: ["supports3DS", "supportsCredit", "supportsDebit"],
+                    supportedNetworks: ["amex", "discover", "masterCard", "visa"],
+                    countryCode: "US",
                 },
+            };
+            const tokenizationSpecification = {
+                type: 'PAYMENT_GATEWAY',
+                parameters: {
+                    "gateway": "stripe",
+                    "stripe:version": "2018-10-31", // your stripe API version
+                    "stripe:publishableKey": props.stripePublicKey // your stripe publishable key
+                                }
+                            };
+            const googlePayMethod = {
+                supportedMethods: "https://google.com/pay",
+                data: {
+                    supportedNetworks: props.supportedNetworks,
+                    supportedTypes: props.supportedTypes,
+                    tokenizationSpecification: tokenizationSpecification,
+                    
+                },
+            };
+            const supportedPaymentMethods = [
+                googlePayMethod,
+                applePayMethod
+        
             ];
 
             paymentRequest.value = new PaymentRequest(supportedPaymentMethods, {
@@ -74,7 +97,6 @@ export default {
 
         const handlePayment = async () => {
             try {
-                console.log(paymentRequest.value)
                 const paymentResponse = await paymentRequest.value.show();
                 handlePaymentResponse(paymentResponse);
             } catch (error) {
