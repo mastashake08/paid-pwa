@@ -11,6 +11,14 @@ import { loadStripe } from '@stripe/stripe-js';
 export default {
     name: 'PaidPwa',
     props: {
+        googleMerchantId: {
+            type: String,
+            required: false,
+        },
+        googleMerchantName: {
+            type: String,
+            required: false,
+        },
         stripePublicKey: {
             type: String,
             required: true,
@@ -58,7 +66,7 @@ export default {
                 supportedMethods: "https://apple.com/apple-pay",
                 data: {
                     version: 3,
-                    merchantIdentifier: "merchant.com.bestbudz",
+                    merchantIdentifier: props.appleMerchantIdentifier,
                     merchantCapabilities: ["supports3DS", "supportsCredit", "supportsDebit"],
                     supportedNetworks: ["amex", "discover", "masterCard", "visa"],
                     countryCode: "US",
@@ -68,8 +76,8 @@ export default {
                 merchantInfo: {
                     // A merchant ID is available after approval by Google.
                     // @see {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist}
-                    merchantId: '00162908838723682626',
-                    merchantName: 'Jyrone Parker'
+                    merchantId: props.googleMerchantId,
+                    merchantName: props.googleMerchantName
                 },
             }
             const tokenizationSpecification = {
