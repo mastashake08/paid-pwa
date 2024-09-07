@@ -1,6 +1,6 @@
 {
   "name": "@mastashake08/paid-pwa",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A package for handling paid PWA installations using Stripe and the Payment Request API, with Web Component and Vue 3 support.",
   "main": "src/paid-pwa.js",
   "type": "module",
