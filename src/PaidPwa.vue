@@ -76,7 +76,7 @@ export default {
                 type: 'PAYMENT_GATEWAY',
                 parameters: {
                     "gateway": "stripe",
-                    "stripe:version": "2018-10-31", // your stripe API version
+                    "stripe:version": "2024-06-20", // your stripe API version
                     "stripe:publishableKey": props.stripePublicKey // your stripe publishable key
                 }
             };
@@ -94,12 +94,11 @@ export default {
                         },
                         tokenizationSpecification: tokenizationSpecification
                     }],
-
                     merchantInfo: googleMerchantInfo
 
                 },
             };
-            
+
             const supportedPaymentMethods = [
                 googlePayMethod,
                 applePayMethod
