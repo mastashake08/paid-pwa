@@ -23,13 +23,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Get package version
-        id: get_version
-        run: echo "PACKAGE_VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
 
       - name: Tag the release
         env:
-          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+          PACKAGE_VERSION: ${{ steps.package-version.outputs.current-version}}
         run: |
           git config --local user.name "NPM Publish Bot"
           git config --local user.email "jyrone.parker@gmail.com"
