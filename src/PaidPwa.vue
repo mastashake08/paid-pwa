@@ -64,27 +64,53 @@ export default {
                     countryCode: "US",
                 },
             };
+            const googleMerchantInfo = {
+                merchantInfo: {
+                    // A merchant ID is available after approval by Google.
+                    // @see {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist}
+                    merchantId: '00162908838723682626',
+                    merchantName: 'Jyrone Parker'
+                },
+            }
             const tokenizationSpecification = {
                 type: 'PAYMENT_GATEWAY',
                 parameters: {
                     "gateway": "stripe",
                     "stripe:version": "2018-10-31", // your stripe API version
                     "stripe:publishableKey": props.stripePublicKey // your stripe publishable key
-                                }
-                            };
+                }
+            };
             const googlePayMethod = {
                 supportedMethods: "https://google.com/pay",
                 data: {
+                    environment: 'TEST',
+                    apiVersion: 2,
+                    apiVersionMinor: 0,
+                    allowedPaymentMethods: [{
+                        type: 'CARD',
+                        parameters: {
+                            allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+                            allowedCardNetworks: ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"]
+                        },
+                        tokenizationSpecification: tokenizationSpecification
+                    }],
+
+                    merchantInfo: googleMerchantInfo
+
+                },
+            };
+            const cardMethod = {
+                supportedMethods: "basic-card",
+                data: {
                     supportedNetworks: props.supportedNetworks,
-                    supportedTypes: props.supportedTypes,
-                    tokenizationSpecification: tokenizationSpecification,
-                    
+                    supportedTypes: props.supportedTypes
+
                 },
             };
             const supportedPaymentMethods = [
                 googlePayMethod,
                 applePayMethod
-        
+
             ];
 
             paymentRequest.value = new PaymentRequest(supportedPaymentMethods, {
