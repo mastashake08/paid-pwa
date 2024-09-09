@@ -1,6 +1,9 @@
 <template>
-    <div>
-        <button @click="handlePayment">Purchase and Install PWA</button>
+    <div class="flex justify-center items-center min-h-screen p-4 bg-gray-900 text-white">
+        <button @click="handlePayment"
+            class="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2">
+            Purchase and Install PWA
+        </button>
     </div>
 </template>
 
@@ -74,18 +77,15 @@ export default {
             };
             const googleMerchantInfo = {
                 merchantInfo: {
-                    // A merchant ID is available after approval by Google.
-                    // @see {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist}
-                    merchantId: props.googleMerchantId,
-                    merchantName: props.googleMerchantName
+                    merchantName: props.googleMerchantName,
                 },
             }
             const tokenizationSpecification = {
                 type: 'PAYMENT_GATEWAY',
                 parameters: {
                     "gateway": "stripe",
-                    "stripe:version": "2024-06-20", // your stripe API version
-                    "stripe:publishableKey": props.stripePublicKey // your stripe publishable key
+                    "stripe:version": "2018-10-31",
+                    "stripe:publishableKey": props.stripePublicKey
                 }
             };
             const googlePayMethod = {
@@ -98,19 +98,19 @@ export default {
                         type: 'CARD',
                         parameters: {
                             allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
-                            allowedCardNetworks: ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"]
+                            allowedCardNetworks: ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"],
+                            allowPrepaidCards: true,
+                            allowCreditCards: true
                         },
                         tokenizationSpecification: tokenizationSpecification
                     }],
-                    merchantInfo: googleMerchantInfo
-
+                    googleMerchantInfo
                 },
             };
 
             const supportedPaymentMethods = [
                 googlePayMethod,
                 applePayMethod
-
             ];
 
             paymentRequest.value = new PaymentRequest(supportedPaymentMethods, {
@@ -184,3 +184,9 @@ export default {
     },
 };
 </script>
+
+<style>
+body {
+    background-color: #1a1a1a;
+}
+</style>
