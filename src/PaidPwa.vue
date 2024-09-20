@@ -21,7 +21,6 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
-import { StripeElementCard } from '@stripe/react-stripe-js';
 
 export default {
     name: 'PaidPwa',
