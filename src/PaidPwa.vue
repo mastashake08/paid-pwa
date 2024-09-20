@@ -1,158 +1,25 @@
 <template>
-    <div class="flex justify-center items-center min-h-screen p-4 bg-gray-900 text-white">
-      <div v-if="paymentRequestAvailable">
-        <div id="payment-request-button"></div>
+    <div>
+      <div id="express-checkout-element" class="text-center">
+        <!-- Stripe Express Checkout Element will be inserted here -->
       </div>
-      <form v-else @submit.prevent="handleSubmit">
-        <div id="card-element" class="mb-4"></div>
-        <button
-          type="submit"
-          :disabled="isProcessing"
-          class="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
-        >
-          {{ isProcessing ? 'Processing...' : 'Purchase and Install PWA' }}
-        </button>
-        <div v-if="errorMessage" class="mt-4 text-red-500">
-          {{ errorMessage }}
-        </div>
-      </form>
+      <div id="error-message" class="text-red-500 mt-4">
+        <!-- Display error message here -->
+      </div>
+      <button
+        class="rounded-md bg-green-500 px-5 my-2"
+        @click="buy"
+      >
+        Purchase and Install PWA
+      </button>
     </div>
   </template>
   
-  <script>
+  <script setup lang="ts">
   import { ref, onMounted } from 'vue';
   import { loadStripe } from '@stripe/stripe-js';
   
-  export default {
-    name: 'PaidPwa',
-    props: {
-      stripePublicKey: {
-        type: String,
-        required: true,
-      },
-      currency: {
-        type: String,
-        default: 'usd',
-      },
-      amount: {
-        type: Number,
-        required: true,
-      },
-      serverEndpoint: {
-        type: String,
-        required: true,
-      },
-      serviceWorkerUrl: {
-        type: String,
-        required: true,
-      },
-    },
-    setup(props) {
-      const stripe = ref(null);
-      const elements = ref(null);
-      const cardElement = ref(null);
-      const paymentRequest = ref(null);
-      const paymentRequestAvailable = ref(false);
-      const isProcessing = ref(false);
-      const errorMessage = ref(null);
-  
-      onMounted(async () => {
-        stripe.value = await loadStripe(props.stripePublicKey);
-        elements.value = stripe.value.elements();
-  
-        // Setup Payment Request Button
-        setupPaymentRequest();
-  
-        // If Payment Request is not available, fall back to card form
-        if (!paymentRequestAvailable.value) {
-          cardElement.value = elements.value.create('card');
-          cardElement.value.mount('#card-element');
-        }
-      });
-  
-      const setupPaymentRequest = () => {
-        paymentRequest.value = stripe.value.paymentRequest({
-          country: 'US',
-          currency: props.currency,
-          total: {
-            label: 'PWA Purchase',
-            amount: props.amount,
-          },
-          requestPayerName: true,
-          requestPayerEmail: true,
-        });
-  
-        // Check the availability of the Payment Request Button
-        paymentRequest.value.canMakePayment().then((result) => {
-          if (result) {
-            paymentRequestAvailable.value = true;
-            const prButton = elements.value.create('paymentRequestButton', {
-              paymentRequest: paymentRequest.value,
-            });
-            prButton.mount('#payment-request-button');
-          } else {
-            paymentRequestAvailable.value = false;
-          }
-        });
-  
-        // Handle the Payment Request payment response
-        paymentRequest.value.on('paymentmethod', async (ev) => {
-          try {
-            const response = await fetch(props.serverEndpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                paymentMethodId: ev.paymentMethod.id,
-                amount: props.amount,
-              }),
-            });
-  
-            if (response.ok) {
-              ev.complete('success');
-              registerServiceWorker();
-            } else {
-              throw new Error('Payment failed.');
-            }
-          } catch (error) {
-            console.error('Payment failed:', error);
-            ev.complete('fail');
-          }
-        });
-      };
-  
-      const handleSubmit = async () => {
-        isProcessing.value = true;
-        errorMessage.value = null;
-  
-        const { error, token } = await stripe.value.createToken(cardElement.value);
-  
-        if (error) {
-          errorMessage.value = error.message;
-          isProcessing.value = false;
-          return;
-        }
-  
-        try {
-          const response = await fetch(props.serverEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: token.id, amount: props.amount }),
-          });
-  
-          if (response.ok) {
-            console.log('Payment successful!');
-            registerServiceWorker();
-          } else {
-            throw new Error('Payment failed on server.');
-          }
-        } catch (err) {
-          errorMessage.value = 'Payment failed. Please try again.';
-        }
-  
-        isProcessing.value = false;
-      };
-  
-      const registerServiceWorker = () => {
+  const registerServiceWorker = () => {
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register(props.serviceWorkerUrl).then((registration) => {
             console.log('Service Worker registered successfully:', registration);
@@ -163,15 +30,112 @@
           console.warn('Service Workers are not supported in this browser.');
         }
       };
-  
-      return { handleSubmit, paymentRequestAvailable, isProcessing, errorMessage };
+  // Define the required props
+  const props = defineProps({
+    stripePublicKey: {
+      type: String,
+      required: true,
     },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    currency: {
+      type: String,
+      default: 'usd',
+    },
+    serverEndpoint: {
+      type: String,
+      required: true,
+    },
+    serviceWorkerUrl: {
+      type: String,
+      required: true,
+    },
+  });
+  
+  const stripe = ref(null);
+  
+  const buy = async () => {
+    const appearance = {
+      theme: 'stripe',
+    };
+  
+    const options = {
+      buttonType: {
+        applePay: 'buy',
+        googlePay: 'buy',
+      },
+    };
+  
+    // Initialize Stripe.js and Elements
+    stripe.value = await loadStripe(props.stripePublicKey);
+    const elements = stripe.value.elements({
+      mode: 'payment',
+      amount: props.amount, // Stripe expects amount in cents
+      currency: props.currency,
+      appearance,
+    });
+  
+    // Create the Express Checkout element
+    const expressCheckoutElement = elements.create('expressCheckout', options);
+    expressCheckoutElement.mount('#express-checkout-element');
+  
+    const handleError = (error) => {
+      const messageContainer = document.querySelector('#error-message');
+      messageContainer.textContent = error.message;
+    };
+  
+    // Handle the confirmation of the payment
+    expressCheckoutElement.on('confirm', async () => {
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        handleError(submitError);
+        return;
+      }
+  
+      // Create the PaymentIntent on the server-side and get the client_secret
+      const response = await fetch(props.serverEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: props.amount, // Amount in cents
+          currency: props.currency,
+        }),
+      });
+      const { client_secret: clientSecret } = await response.json();
+  
+      // Confirm the payment using Stripe.js
+      const { error } = await stripe.value.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: window.location.href, // Return URL after successful payment
+        },
+        redirect: 'if_required'
+      });
+  
+      if (error) {
+        handleError(error);
+      } else {
+        console.log('Payment successful');
+        // The payment UI closes automatically, and the user is redirected.
+        registerServiceWorker();
+      }
+    });
   };
+  
+  onMounted(async () => {
+    // Preload the Stripe instance when the component is mounted
+    stripe.value = await loadStripe(props.stripePublicKey);
+  });
   </script>
   
-  <style>
-  body {
-    background-color: #1a1a1a;
+  <style scoped>
+  #express-checkout-element {
+    margin-top: 20px;
   }
   </style>
   
