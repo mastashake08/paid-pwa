@@ -1,27 +1,31 @@
 <template>
     <div class="flex justify-center items-center min-h-screen p-4 bg-gray-900 text-white">
-        <button @click="handlePayment"
-            class="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2">
-            Purchase and Install PWA
-        </button>
+        <form @submit.prevent="handleSubmit">
+            <div id="card-element" class="mb-4">
+                <!-- Stripe Card Element will be inserted here -->
+            </div>
+            <button
+                type="submit"
+                :disabled="isProcessing"
+                class="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
+            >
+                {{ isProcessing ? 'Processing...' : 'Purchase and Install PWA' }}
+            </button>
+            <div v-if="errorMessage" class="mt-4 text-red-500">
+                {{ errorMessage }}
+            </div>
+        </form>
     </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue';
 import { loadStripe } from '@stripe/stripe-js';
+import { StripeElementCard } from '@stripe/react-stripe-js';
 
 export default {
     name: 'PaidPwa',
     props: {
-        googleMerchantId: {
-            type: String,
-            required: false,
-        },
-        googleMerchantName: {
-            type: String,
-            required: false,
-        },
         stripePublicKey: {
             type: String,
             required: true,
@@ -34,18 +38,6 @@ export default {
             type: Number,
             required: true,
         },
-        country: {
-            type: String,
-            default: 'US',
-        },
-        supportedNetworks: {
-            type: Array,
-            default: () => ['visa', 'mastercard', 'amex', 'discover'],
-        },
-        supportedTypes: {
-            type: Array,
-            default: () => ['credit', 'debit'],
-        },
         serverEndpoint: {
             type: String,
             required: true,
@@ -57,112 +49,47 @@ export default {
     },
     setup(props) {
         const stripe = ref(null);
-        const paymentRequest = ref(null);
+        const elements = ref(null);
+        const cardElement = ref(null);
+        const isProcessing = ref(false);
+        const errorMessage = ref(null);
 
         onMounted(async () => {
             stripe.value = await loadStripe(props.stripePublicKey);
-            setupPaymentRequest();
+            elements.value = stripe.value.elements();
+
+            cardElement.value = elements.value.create('card');
+            cardElement.value.mount('#card-element');
         });
 
-        const setupPaymentRequest = () => {
-            const applePayMethod = {
-                supportedMethods: "https://apple.com/apple-pay",
-                data: {
-                    version: 3,
-                    merchantIdentifier: props.appleMerchantIdentifier,
-                    merchantCapabilities: ["supports3DS", "supportsCredit", "supportsDebit"],
-                    supportedNetworks: ["amex", "discover", "masterCard", "visa"],
-                    countryCode: "US",
-                },
-            };
-            const googleMerchantInfo = {
-                merchantInfo: {
-                    merchantName: props.googleMerchantName,
-                },
+        const handleSubmit = async () => {
+            isProcessing.value = true;
+            errorMessage.value = null;
+
+            const { error, token } = await stripe.value.createToken(cardElement.value);
+
+            if (error) {
+                errorMessage.value = error.message;
+                isProcessing.value = false;
+                return;
             }
-            const tokenizationSpecification = {
-                type: 'PAYMENT_GATEWAY',
-                parameters: {
-                    "gateway": "stripe",
-                    "stripe:version": "2018-10-31",
-                    "stripe:publishableKey": props.stripePublicKey
-                }
-            };
-            const googlePayMethod = {
-                supportedMethods: "https://google.com/pay",
-                data: {
-                    environment: 'TEST',
-                    apiVersion: 2,
-                    apiVersionMinor: 0,
-                    allowedPaymentMethods: [{
-                        type: 'CARD',
-                        parameters: {
-                            allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
-                            allowedCardNetworks: ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"],
-                            allowPrepaidCards: true,
-                            allowCreditCards: true
-                        },
-                        tokenizationSpecification: tokenizationSpecification
-                    }],
-                    googleMerchantInfo
-                },
-            };
 
-            const supportedPaymentMethods = [
-                googlePayMethod,
-                applePayMethod
-            ];
-
-            paymentRequest.value = new PaymentRequest(supportedPaymentMethods, {
-                total: {
-                    label: 'PWA Purchase',
-                    amount: { currency: props.currency, value: (props.amount / 100).toFixed(2) },
-                },
-            });
-        };
-
-        const handlePayment = async () => {
             try {
-                const paymentResponse = await paymentRequest.value.show();
-                handlePaymentResponse(paymentResponse);
-            } catch (error) {
-                console.error('Payment Request failed:', error);
-            }
-        };
-
-        const handlePaymentResponse = async (paymentResponse) => {
-            try {
-                const paymentDetails = paymentResponse.details;
-
-                const result = await stripe.value.createToken('card', {
-                    number: paymentDetails.cardNumber,
-                    exp_month: paymentDetails.expiryMonth,
-                    exp_year: paymentDetails.expiryYear,
-                    cvc: paymentDetails.cardSecurityCode,
-                    name: paymentDetails.cardholderName,
+                const serverResponse = await fetch(props.serverEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token.id, amount: props.amount }),
                 });
 
-                if (result.error) {
-                    console.error('Error creating token:', result.error.message);
-                    paymentResponse.complete('fail');
-                } else {
-                    const serverResponse = await fetch(props.serverEndpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token: result.token.id }),
-                    });
+                if (!serverResponse.ok) throw new Error('Payment failed on server.');
 
-                    if (serverResponse.ok) {
-                        console.log('Payment successful!');
-                        paymentResponse.complete('success');
-                        registerServiceWorker();
-                    } else {
-                        throw new Error('Payment failed on server.');
-                    }
-                }
+                console.log('Payment successful!');
+                registerServiceWorker();
+                isProcessing.value = false;
             } catch (error) {
-                console.error('Payment handling error:', error);
-                paymentResponse.complete('fail');
+                console.error('Payment error:', error);
+                errorMessage.value = 'Payment failed. Please try again.';
+                isProcessing.value = false;
             }
         };
 
@@ -180,7 +107,7 @@ export default {
             }
         };
 
-        return { handlePayment };
+        return { handleSubmit, isProcessing, errorMessage };
     },
 };
 </script>
