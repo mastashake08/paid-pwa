@@ -52,10 +52,12 @@ export default {
         const cardElement = ref(null);
         const isProcessing = ref(false);
         const errorMessage = ref(null);
-
+        const appearance = {
+            theme: 'night'
+        };
         onMounted(async () => {
             stripe.value = await loadStripe(props.stripePublicKey);
-            elements.value = stripe.value.elements();
+            elements.value = stripe.value.elements({appearance});
 
             cardElement.value = elements.value.create('card');
             cardElement.value.mount('#card-element');

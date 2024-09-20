@@ -20,8 +20,11 @@ export class PaidPWA extends HTMLElement {
     }
   
     async setupStripe(stripePublicKey) {
+        const appearance = {
+            theme: 'night'
+        };
       this.stripe = Stripe(stripePublicKey);
-      this.elements = this.stripe.elements();
+      this.elements = this.stripe.elements({appearance});
   
       // Create an instance of the card Element.
       this.cardElement = this.elements.create('card');
